@@ -1,0 +1,1351 @@
+
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>חנות המלאי</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+  // Use the same version for all Firebase imports (10.8.0)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA8VhIFlBuduLwvwDEUY3lV5oIuQ71QAO0",
+    authDomain: "tasking-bfc1d.firebaseapp.com",
+    projectId: "tasking-bfc1d",
+    storageBucket: "tasking-bfc1d.firebasestorage.app",
+    messagingSenderId: "18244313186",
+    appId: "1:18244313186:web:3f260f9a29b6b63504b13b"
+  };
+
+  // 1. Initialize App FIRST
+  const app = initializeApp(firebaseConfig);
+  
+  // 2. Initialize services using the app instance
+  const db = getFirestore(app);
+  const auth = getAuth(app); 
+  const provider = new GoogleAuthProvider();
+
+  // 3. Auth Functions
+  window.signIn = () => {
+    signInWithPopup(auth, provider)
+      .then((result) => console.log("Success!"))
+      .catch((error) => alert("Error: " + error.message));
+  };
+
+  window.signOut = () => auth.signOut();
+
+  // 4. Watch for changes
+  onAuthStateChanged(auth, (user) => {
+    const status = document.getElementById("user-status");
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    // Make sure elements exist before trying to update them
+    if (!status || !loginBtn || !logoutBtn) return;
+
+    if (user) {
+      status.innerText = "Logged in as: " + user.email;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      
+      // TRIGGER PRICE FETCH HERE
+      console.log("Ready to fetch prices for:", user.email);
+    } else {
+      status.innerText = "Logged out.";
+      loginBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+    }
+  });
+
+  // 5. Data Functions
+  async function loadUnifiedInventory() {
+    try {
+      const ref = doc(db, "inventory", "unified");
+      const snap = await getDoc(ref);
+      return snap.exists() ? snap.data().rows || [] : [];
+    } catch (error) {
+      console.error("Firestore Error:", error);
+      return [];
+    }
+  }
+
+  // Expose API
+  window.storeAPI = {
+    loadUnifiedInventory
+  };
+</script>
+  <!-- <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+
+  // 3. Make the buttons work
+  window.signIn = () => {
+    signInWithPopup(auth, provider)
+      .then((result) => console.log("Success!"))
+      .catch((error) => alert("Error: " + error.message));
+  };
+
+  window.signOut = () => auth.signOut();
+
+  // 4. Watch for changes (This is the "magic" part)
+  onAuthStateChanged(auth, (user) => {
+    const status = document.getElementById("user-status");
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    if (user) {
+      status.innerText = "Logged in as: " + user.email;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+      console.log("Now you can fetch prices for:", user.email);
+    } else {
+      status.innerText = "Logged out.";
+      loginBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+    }
+  });
+  async function loadUnifiedInventory() {
+    const ref = doc(db, "inventory", "unified");
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data().rows || [] : [];
+  }
+
+  // 🔑 Expose ONLY what UI needs
+  window.storeAPI = {
+    loadUnifiedInventory
+  };
+</script> -->
+
+</head>
+<style>
+
+  /* --- image hover zoom --- */
+.blend-area {
+ 
+  position: relative;
+}
+
+.blend-area img {
+  transition: transform 0.4s ease;
+  transform-origin: center;
+}
+
+.blend-area:hover img {
+  transform: scale(1.08);
+}
+
+  .blend-area .base { background:#fff }
+
+ .blend-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+  background: transparent;
+}
+
+/* This is what the blend works against */
+.blend-area .base {
+  position: absolute;
+  inset: 0;
+  background: #fff; /* neutral */
+}
+
+.blend-area img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  filter:
+    contrast(1.08)
+    brightness(1.02)
+    saturate(1.05);
+}
+
+.sharp-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.08);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 4;
+}
+
+
+.color-layer {
+  position: absolute;
+  inset: 0;
+  background: var(--cover-color);
+  opacity: 0.55;              /* 🔑 control strength */
+  pointer-events: none;
+  z-index: 3;
+
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+
+
+
+</style>
+<body class="bg-gray-100 font-sans">
+
+  <!-- רקע חנות -->
+  <div class="min-h-screen bg-cover bg-center" style="background-image:url('STORE_BACKGROUND.jpg')">
+
+    <!-- HEADER -->
+    <header class="bg-black/60 text-white p-6 flex justify-between items-center">
+      <h1 class="text-2xl font-bold"> חנות </h1>
+      <button onclick="toggleCart()" class="relative">
+        🛒 עגלה
+        <span id="cartCount" class="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 rounded-full">0</span>
+      </button>
+    </header>
+
+    <!-- MAIN -->
+    <div class="flex" >
+
+      <!-- קטגוריות -->
+      <!-- <aside class="w-64 bg-white/90 p-4 hidden md:block">
+        <h2 class="font-bold mb-4">קטגוריות</h2>
+        <ul class="space-y-2">
+          
+          <li><button onclick="filterCategory('סט')" class="w-full text-right">מחזור</button></li>
+          <li><button onclick="filterCategory('סידור')" class="w-full text-right">סידור</button></li>
+          <li><button onclick="filterCategory('תהלים')" class="w-full text-right">תהלים</button></li>
+          <li><button onclick="filterCategory('תחינות')" class="w-full text-right">תחינות</button></li>
+          <li><button onclick="filterCategory('בית מגילה')" class="w-full text-right">בית מגילה</button></li>
+          <li><button onclick="filterCategory('פיטום הקטורת')" class="w-full text-right">פיטום הקטורת</button></li>
+          <li><button onclick="filterCategory('זמירות')" class="w-full text-right">זמירות</button></li>
+          <li><button onclick="filterCategory('הכל')" class="w-full text-right">הכל</button></li>
+          <li><button onclick="filterCategory('אחר')" class="w-full text-right">אחר</button></li>
+        </ul>
+      </aside> -->
+
+      
+
+    </div>
+    <div id="bookTypeSelector" class="flex gap-3 mb-6"></div>
+    <div id="publisherSelector" class="flex gap-3 mb-6"></div>
+    <div class="mb-6 space-y-4">
+      <div id="colorSelector" class="flex flex-wrap gap-3"></div>
+      <div id="designSelector" class="flex flex-wrap gap-3"></div>
+    </div>
+
+
+    <!-- מוצרים -->
+      <main class="flex-1 p-6">
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+      </main>
+    <!-- עגלה -->
+    <div id="cart" class="fixed top-0 right-0 h-full w-96 bg-white shadow-xl transform translate-x-full transition-transform">
+      <div class="p-4 border-b flex justify-between">
+        <h2 class="font-bold">🛒 עגלת קניות</h2>
+        <button onclick="toggleCart()">✖</button>
+      </div>
+      <div id="cartItems" class="p-4 space-y-3"></div>
+      
+        <input class="w-full  py-2" type="text" id="customerName">
+      
+      <div class="p-4 border-t">
+        <button class="w-full bg-black text-white py-2" onclick="submitOrder()">המשך להזמנה</button>
+      </div>
+    </div>
+
+  </div>
+  <script>
+    function buildCustomerForOrder() {
+      const destination = document.getElementById("customerName")?.value || "";
+
+      return {
+        name: destination,
+        number: "",
+        email: "eyleatherorders@gmail.com",
+        note: "",
+        delivery: "",
+        bookSupply: "eyleather"
+      };
+    }
+
+
+        function buildOrderFromCart() {
+    
+    return Object.values(cart).map(item => ({
+      name:item[0].name,
+      size: "",
+      nusach: "",
+      bookNote: "",
+      nameIngrave: "",
+      nameIngraveType: "",
+      styles: [
+        {
+          color: "",
+          style: "",
+          amount: item[1]
+        }
+      ]
+    }));
+  }
+
+  async function submitOrder() {
+      const customer = buildCustomerForOrder();
+      const order = buildOrderFromCart();
+      console.log(order)
+      if (order.length === 0) {
+        alert("העגלה ריקה");
+        return;
+      }
+
+      const data = {
+        customer: JSON.stringify(customer),
+        order: JSON.stringify(order)
+      };
+
+      const url = "https://script.google.com/macros/s/AKfycbxe0Whun-tkAx5N30wCiBS1EZG9ONqMiBszq12Wh80--tL1kLRlgcIrVywsL8dJQ3tqSQ/exec";
+
+      try {
+        const params = new URLSearchParams(data);
+
+        const response = await fetch(url, {
+          method: "POST",
+          body: params
+        });
+
+        if (!response.ok) throw new Error("Order failed");
+
+        alert("ההזמנה נשלחה בהצלחה ✅");
+        // clearCart();
+
+      } catch (err) {
+        console.error(err);
+        alert("שגיאה בשליחת ההזמנה");
+      }
+    }
+  </script>
+<!-- PRODUCT MODAL -->
+<div id="productModal"
+  class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+
+  <div class="bg-white rounded-2xl w-full max-w-4xl p-6 relative overflow-visible">
+    <button onclick="closeProductModal()"
+      class="absolute top-4 left-4 text-xl">✖</button>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- IMAGE -->
+      <div class="h-[420px] bg-gray-100 rounded-xl overflow-hidden">
+        <div class="blend-area modal-image-zoom h-full">
+          <img id="modalImage"
+          class="w-full h-full object-contain cursor-zoom-in"
+          onclick="openImageZoom()" />
+
+        </div>
+      </div>
+
+      <!-- DETAILS -->
+      <div>
+        <h2 id="modalTitle" class="text-xl font-bold mb-2"></h2>
+        <p id="modalStock" class="text-sm text-gray-500 mb-4"></p>
+
+        <!-- SIZE -->
+        <label class="block mb-2 font-semibold">גודל</label>
+        <select id="modalSize"
+          class="border rounded px-3 py-2 w-full mb-4"></select>
+
+        <!-- DESIGN -->
+        <div class="mb-4">
+          <p class="font-semibold mb-2">עיצוב</p>
+          <div id="modalDesigns" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- COLORS -->
+        <div class="mb-6">
+          <p class="font-semibold mb-2">צבע</p>
+          <div id="modalColors" class="flex gap-3 flex-wrap"></div>
+        </div>
+
+        <button onclick="addModalToCart()"
+          class="w-full bg-black text-white py-2 rounded-xl">
+          הוסף לעגלה
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let inventoryRows = [];
+let cart = [];
+let activeCategory = 'הכל';
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', async () => {
+  inventoryRows = await window.storeAPI.loadUnifiedInventory();
+  inventoryRows = inventoryRows.map(row => ({
+    ...row,
+    catalogNumber: buildCatalogNumber(row)
+  }));
+
+  console.log(inventoryRows); // 👀 verify
+  //renderProducts();
+  renderBookTypeSelector();
+});
+
+// ===== RENDER =====
+const ACTIVE_BTN =
+  "bg-black text-white ring-2 ring-black";
+
+const INACTIVE_BTN =
+  "bg-gray-100 text-gray-800 hover:bg-black hover:text-white";
+
+const BOOK_TYPE_RULES = [
+  { match: ["סידור"], folder: "sidur" },
+  { match: ["מחזור"], folder: "mahzor" },
+  { match: ["תהלים", "תהילים"], folder: "tehilim" },
+  { match: ['תנ"ך', "תנך"], folder: "tanach" }
+];
+
+const SKIN_RULES = [
+  { match: ["ווקטה", "אנטיקו"], gradient: "vachetta" }
+  // default → goat
+];
+
+const PLATE_RULES = [
+  "ירושלים",
+  "חגים"
+];
+
+const COLOR_RULES = [
+  { match: ["חום", "בראון"], color: "#5a2d1a" },
+  { match: ["בורדו"], color: "#8b1e1e" },
+  { match: ["אדום"], color: "#b02a2a" },
+  { match: ["כחול", "נייבי"], color: "#1e3a5f" },
+  { match: ["ירוק"], color: "#2f6b3c" },
+  { match: ["לבן", "שמנת"], color: "#e8e2d8" },
+  { match: ["שיש"], color: "#bbab9b" },
+  { match: ["קוניאק"], color: "#6f301b" }
+];
+
+const CATALOG_RULES = {
+  publisher: [
+    { match: ["כוונת הלב"], code: "K" },
+    { match: ["עת רצון"], code: "E" },
+    { match: ["מאירות"], code: "M" },
+    { match: ["כפתור"], code: "H" },
+    { match: ["בית תפילה"], code: "B" },
+    { match: ["בית מגילה"], code: "J" },
+    { match: ["פיטום הקטורת"], code: "J" }
+  ],
+
+  bookType: [
+    { match: ["בלוק"], code: "11" ,cat:"c"},
+    { match: ["זוג מחזור"], code: "2" ,cat:"a"},
+    { match: ["מחזור","סט"], code: "1" ,cat:"a"},
+    { match: ["סידור"], code: "3" ,cat:"a"},
+    { match: ["תהלים", "תהילים"], code: "4" ,cat:"a"},
+    { match: ["תחינות"], code: "5" ,cat:"a"},
+    { match: ["זמירות"], code: "6" ,cat:"a"},
+    { match: ["הגדה"], code: "7" ,cat:"a"},
+    { match: ["צאנה וראנה", 'צו"ר'], code: "8" ,cat:"a"},
+    { match: ["בית מגילה"], code: "9" ,cat:"b"},
+    { match: ["פיטום הקטורת"], code: "10" ,cat:"b" }
+  ],
+
+  size: [
+    { match: ["כיס"], code: "S" },
+    { match: ["בינוני"], code: "M" },
+    { match: ["גדול"], code: "L" },
+    { match: ['30 ס"מ'], code: "30" },
+    { match: ['25 ס"מ'], code: "25" },
+    { match: ['20 ס"מ'], code: "20" },
+    { match: ['33 ס"מ'], code: "33" },
+    { match: ['40 ס"מ'], code: "40" },
+    { match: ['41 ס"מ'], code: "41" },
+    { match: ['15 ס"מ'], code: "15" },
+    
+  ],
+
+  color: [
+    { match: ["ברונזה אנטיקו"], code: "WL" ,visual:"#bbab9b"},      // ⚠️ specific FIRST
+    { match: ["ברונזה", "ברונזה גוונים"], code: "BZ" ,visual:"#50281a"},
+    { match: ["חום גוונים"], code: "H" ,visual:"#522215"},
+    { match: ["שיש"], code: "TP" ,visual:"#bbab9b"},
+    { match: ["קרם", "שמנת"], code: "C" ,visual:""},
+    { match: ["קוניאק ווקטה"], code: "TB" ,visual:"#6f301b"},
+    { match: ["לבן"], code: "W" ,visual:"#e8e2d8"},
+    { match: ["אפור","אפור ווקטה"], code: "G" ,visual:"#e8e2d8"},
+    { match: ["רוזגולד"] , code:"RG"}
+
+  ],
+
+  design: [
+    { match: ["ירושלים"], code: "01" },
+    { match: ["חגים קטן", "חגים חדש", "*חגים*"], code: "00" },
+    { match: ["שפתי", "חגים", "כינור"], code: "02" },
+    { match: ["חסידי"], code: "03" },
+    { match: ["נשיאותי"], code: "04" },
+    { match: ["מודרני"], code: "05" },
+    { match: ["נשיאותי פרוה", "פרוה נשיאותי"], code:"04P"},
+    { match: ["מודרני פרוה", "פרוה מודרני"], code:"05P"},
+    { match: ["צמה","קלוע"], code:"06"},
+    { match: ["שושנים"], code:"07"},
+    { match: ["מנורה"], code:"08"}
+  ]
+};
+
+function createFilterButton({
+  label,
+  value,
+  key,
+  onClick
+}) {
+  const btn = document.createElement("button");
+
+  const isActive = selection[key] === value;
+
+  btn.className = `
+    px-4 py-2 rounded-xl transition
+    ${isActive ? ACTIVE_BTN : INACTIVE_BTN}
+  `;
+
+  btn.textContent = label;
+
+  btn.onclick = onClick;
+
+  return btn;
+}
+
+
+function detectCode(name, rules) {
+  for (const rule of rules) {
+    if (rule.match.some(word => name.includes(word))) {
+      return rule.code;
+    }
+  }
+  return "0";
+}
+
+function detectRule(name, rules) {
+  return rules.find(rule =>
+    rule.match.some(word => name.includes(word))
+  ) || null;
+}
+
+
+function buildCatalogNumber(row) {
+  const name = row.name || "";
+
+  const publisher = detectCode(name, CATALOG_RULES.publisher);
+  const bookType  = detectCode(name, CATALOG_RULES.bookType);
+  const size      = detectCode(name, CATALOG_RULES.size);
+  const color     = detectCode(name, CATALOG_RULES.color);
+  const design    = detectCode(name, CATALOG_RULES.design);
+  
+
+  return `${publisher}-${bookType}-${size}-${color}-${design}`;
+}
+
+  
+function getVisualColorFromCatalog(row) {
+  const { color } = parseCatalogNumber(row.catalogNumber);
+
+  const rule = CATALOG_RULES.color.find(r => r.code === color);
+  return rule ? rule.visual : null;
+}
+
+ 
+
+
+function resolveProductMeta(name = "") {
+  let bookType = "other";
+  let gradient = null;
+  let isPlate = false;
+
+  // ---- book type ----
+  for (const rule of BOOK_TYPE_RULES) {
+    if (rule.match.some(w => name.includes(w))) {
+      bookType = rule.folder;
+      break;
+    }
+  }
+
+  // ---- skin / gradient ----
+  for (const rule of SKIN_RULES) {
+    if (rule.match.some(w => name.includes(w))) {
+      gradient = rule.gradient;
+      break;
+    }
+  }
+
+  // ---- plate design ----
+  isPlate = PLATE_RULES.some(w => name.includes(w));
+
+  return {
+    bookType,     // "sidur"
+    gradient,     // "vachetta" | null
+    isPlate       // true / false
+  };
+}
+
+function getColorFromName(name) {
+  if (!name) return null;
+
+  for (const rule of COLOR_RULES) {
+    if (rule.match.some(word => name.includes(word))) {
+      return rule.color;
+    }
+  }
+
+  return null; // fallback
+}
+
+function applyColorByName(itemName) {
+  const color = getColorFromName(itemName);
+
+  if (color) {
+    colorLayer.style.background = color;
+    colorLayer.style.opacity = "1";
+  } else {
+    colorLayer.style.background = "transparent";
+  }
+}
+
+
+
+// function renderProducts() {
+//   const grid = document.getElementById('productsGrid');
+//   grid.innerHTML = '';
+
+//   inventoryRows
+//     .filter(r => activeCategory === 'הכל' || r.name.includes(activeCategory))
+//     .forEach((row, i) => {
+//       const color = getColorFromName(row.name);
+
+//       const card = document.createElement('div');
+//       card.className = 'bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden';
+
+//       card.innerHTML = `
+//       <div class="h-80 bg-gray-100 overflow-hidden relative">
+//         <div class="blend-area">
+//           <div class="sharp-layer"></div>
+
+//           <div class="base"></div>
+
+//           <img
+//             src="${resolveProductImage(row)}"
+//             alt="${row.name}"
+//           />
+
+//           ${color ? `
+//           <div
+//             class="color-layer"
+//             style="
+//               --cover-color:${color};
+//               -webkit-mask-image: url('${resolveProductImage(row)}');
+//               mask-image: url('${resolveProductImage(row)}');
+//             "
+//           ></div>
+//         ` : ``}
+
+//         </div>
+//       </div>
+
+//       <div class="p-4">
+//         <h3 class="font-bold mb-1">${row.name}</h3>
+//         <p class="text-sm text-gray-600 mb-2">זמין: ${row.total}</p>
+//         <button onclick="addToCart(${i})"
+//           class="w-full bg-black text-white py-1 rounded">
+//           הוסף לעגלה
+//         </button>
+//       </div>
+//     `;
+
+
+//       grid.appendChild(card);
+//     });
+// }
+
+//======imegery=======
+function resolveProductImage(row,bookType,style,color) {
+  const name = row.name || '';
+
+//   if (name.includes('חסידי')) {
+//     return 'assets/images/'+ bookType +'/hasidic.png';
+//   }
+
+//   if (name.includes('מודרני')) {
+//     return 'assets/images/'+ bookType +'/modern.png';
+//   }
+
+// if (name.includes('נשיאותי')) {
+//     return 'assets/images/'+ bookType +'/imperial.png';
+//   }
+
+// if (name.includes('בית מגילה')) {
+//     return 'assets/images/'+ bookType +'/megileh.png';
+//   }
+console.log(style+color);
+  
+  return 'assets/images/'+ bookType +'/'+ (style || row.catalogNumber.split("-")[4])+ (color || row.catalogNumber.split("-")[3]) +'.png';
+}
+
+
+// ===== RENDER SECON TRY ========
+let selection = {
+  bookType: null,
+  publisher: null,
+  size: null,
+  color: null,
+  design: null
+};
+
+let virtualProducts = [];
+
+
+
+function parseCatalogNumber(catalog) {
+  const [publisher, bookType, size, color, design] = catalog.split("-");
+  return { publisher, bookType, size, color, design };
+}
+
+function matchesSelection(row, selection) {
+  const parts = parseCatalogNumber(row.catalogNumber);
+
+  if (selection.bookType && parts.bookType !== selection.bookType) return false;
+  if (selection.publisher && parts.publisher !== selection.publisher) return false;
+
+  if (selection.color && parts.color !== selection.color) return false;
+  if (selection.design && parts.design !== selection.design) return false;
+
+  return true;
+}
+
+
+
+function getLabelFromCode(code, rules) {
+  if (code === "0") return "לא מוגדר";
+
+  const rule = rules.find(r => r.code === code);
+  return rule ? rule.match[0] : code;
+}
+
+function renderBookTypeSelector() {
+  const container = document.getElementById("bookTypeSelector");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  CATALOG_RULES.bookType.forEach(rule => {
+    const btn = createFilterButton({
+      label: rule.match[0],
+      value: rule.code,
+      key: "bookType",
+      onClick: () => {
+        selection.bookType = rule.code;
+
+        // reset downstream
+        selection.publisher = null;
+        selection.color = null;
+        selection.design = null;
+
+        renderPublisherSelector();
+        renderColorSelector();
+        renderDesignSelector();
+        renderFilteredProducts();
+        renderBookTypeSelector(); // 🔁 refresh highlight
+      }
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+
+
+function renderPublisherSelector() {
+  const container = document.getElementById("publisherSelector");
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!selection.bookType) return;
+
+  const publishers = new Set();
+
+  inventoryRows.forEach(row => {
+    const parts = parseCatalogNumber(row.catalogNumber);
+    if (parts.bookType === selection.bookType) {
+      publishers.add(parts.publisher);
+    }
+  });
+
+  [...publishers].forEach(pub => {
+    const btn = createFilterButton({
+      label: getLabelFromCode(pub, CATALOG_RULES.publisher),
+      value: pub,
+      key: "publisher",
+      onClick: () => {
+        selection.publisher = pub;
+        selection.color = null;
+        selection.design = null;
+
+        renderColorSelector();
+        renderDesignSelector();
+        renderFilteredProducts();
+        renderPublisherSelector(); // 🔁 highlight
+      }
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+
+function renderColorSelector() {
+  const container = document.getElementById("colorSelector");
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!selection.bookType || !selection.publisher) return;
+
+  const colors = new Set();
+
+  inventoryRows.forEach(row => {
+    const parts = parseCatalogNumber(row.catalogNumber);
+    if (
+      parts.bookType === selection.bookType &&
+      parts.publisher === selection.publisher
+    ) {
+      colors.add(parts.color);
+    }
+  });
+
+  [...colors].forEach(color => {
+    const btn = createFilterButton({
+      label: getLabelFromCode(color, CATALOG_RULES.color),
+      value: color,
+      key: "color",
+      onClick: () => {
+        selection.color = color;
+        selection.design = null;
+
+        renderDesignSelector();
+        renderFilteredProducts();
+        renderColorSelector(); // 🔁 highlight
+      }
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+
+function renderDesignSelector() {
+  const container = document.getElementById("designSelector");
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!selection.bookType || !selection.publisher) return;
+
+  const designs = new Set();
+
+  inventoryRows.forEach(row => {
+    const parts = parseCatalogNumber(row.catalogNumber);
+    if (
+      parts.bookType === selection.bookType &&
+      parts.publisher === selection.publisher &&
+      (!selection.color || parts.color === selection.color)
+    ) {
+      designs.add(parts.design);
+    }
+  });
+
+  [...designs].forEach(design => {
+    const btn = createFilterButton({
+      label: getLabelFromCode(design, CATALOG_RULES.design),
+      value: design,
+      key: "design",
+      onClick: () => {
+        selection.design = design;
+        selection.color = null;
+
+        renderColorSelector();
+        renderFilteredProducts();
+        renderDesignSelector(); // 🔁 highlight
+      }
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+
+
+
+function renderFilteredProducts() {
+  
+
+  const grid = document.getElementById("productsGrid");
+  grid.innerHTML = "";
+
+  inventoryRows
+    .filter(row => matchesSelection(row, selection))
+    .forEach(row => {
+
+      let factoryBadge = row.factory.available > 0 
+      ? `<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">מפעל</span>` 
+      : '';
+      let rivhitBadge = row.rivhit.available > 0 
+        ? `<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">חנות</span>` 
+        : '';
+      const visualColor = null//getVisualColorFromCatalog(row);
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded-xl shadow flex flex-col h-full cursor-pointer";
+      div.innerHTML = `
+      <div class="h-55 bg-gray-100 overflow-hidden relative">
+        <div class="blend-area">
+          <div class="sharp-layer"></div>
+
+          <div class="base"></div>
+
+          <img
+            src="${resolveProductImage(row, selection.bookType, selection.design, selection.color)}"
+            alt="${row.name}"
+            onerror="this.onerror=null; this.src='assets/images/eyicon.png';"
+          />
+
+          ${visualColor ? `
+          <div
+            class="color-layer"
+            style="
+              --cover-color:${visualColor};
+              -webkit-mask-image: url('${resolveProductImage(row, selection.bookType)}');
+              mask-image: url('${resolveProductImage(row , selection.bookType)}');
+            "
+          ></div>
+        ` : ``}
+
+        </div>
+      </div>
+
+      <div class="p-4 flex-grow flex flex-col">
+        
+        <h3 class="font-bold">${row.name}</h3>
+        <p class="text-sm text-gray-500 mb-4">${row.catalogNumber} <strong>זמין: </strong>${row.total}</p>
+        <div class="flex gap-2 mb-2">
+           ${factoryBadge}
+           ${rivhitBadge}
+        </div>
+        <!-- addToCart('${row.catalogNumber}')-->
+        <button onclick="event.stopPropagation();addToCart('${row.catalogNumber}') "
+          class="w-full mt-auto bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors">
+          להזמין
+        </button>
+      </div>
+
+      `
+      div.onclick = () => openProductModal(row);
+      grid.appendChild(div);
+    });
+}
+
+// ===== CART =====
+function getCartQuantity(catalogNumber) {
+  const found = cart.find(item => item[0].catalogNumber === catalogNumber);
+  return found ? found[1] : 0;
+}
+
+function addToCart(index) {
+  let line = inventoryRows.find(row => row.catalogNumber === index) || virtualProducts[virtualProducts.length - 1];
+  let existingItemIndex = cart.findIndex(item => item[0].catalogNumber === index);
+
+  if (existingItemIndex > -1) {
+    cart[existingItemIndex][1] += 1;
+  } else {
+    cart.push([line, 1]);
+  }
+  showToast("הפריט נוסף לעגלה! ");
+  console.log(getCartQuantity(index))
+  updateCart();
+}
+
+function updateCart() {
+  document.getElementById('cartCount').innerText = cart.length;
+  const container = document.getElementById('cartItems');
+  container.innerHTML = '';
+
+  cart.forEach(item => {
+    console.log(item)
+    const div = document.createElement('div');
+    div.className = 'border p-2 rounded';
+    div.textContent = item[0].name 
+    div.textContent += " "+item[1];
+    container.appendChild(div);
+  });
+}
+
+// ===== UI =====
+function toggleCart() {
+  document.getElementById('cart').classList.toggle('translate-x-full');
+}
+
+function filterCategory(cat) {
+  activeCategory = cat;
+  renderProducts();
+}
+
+//modal code
+let modalState = {};
+
+function updateModalImage() {
+  const imgElement = document.getElementById("modalImage");
+  
+  imgElement.onerror = function() {
+    this.onerror = null; 
+    this.src = 'assets/images/eyicon.png';
+    console.warn("Product image failed to load, using placeholder.");
+  };
+
+  // 2. Resolve and set the source
+  imgElement.src = resolveProductImage(
+    modalState.row,
+    modalState.bookType,
+    modalState.design,
+    modalState.color
+  );
+}
+
+function renderModalSize() {
+  const select = document.getElementById("modalSize");
+  select.innerHTML = "";
+
+  CATALOG_RULES.size.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r.code;
+    opt.textContent = r.match[0];
+    opt.selected = modalState.size === r.code;
+    select.appendChild(opt);
+  });
+
+  select.onchange = e => {
+    modalState.size = e.target.value;
+    refreshModalProduct(); // 🔥
+  };
+
+}
+
+function renderModalDesigns() {
+  const wrap = document.getElementById("modalDesigns");
+  wrap.innerHTML = "";
+
+  CATALOG_RULES.design.forEach(r => {
+    const btn = document.createElement("button");
+    btn.textContent = r.match[0];
+    btn.className = `
+      px-3 py-1 rounded-xl border
+      ${modalState.design === r.code ? "bg-black text-white" : ""}
+    `;
+    btn.onclick = () => {
+      modalState.design = r.code;
+
+      renderModalDesigns();
+      refreshModalProduct(); // 🔥 THIS
+    };
+
+    wrap.appendChild(btn);
+  });
+}
+
+function renderModalColors() {
+  const wrap = document.getElementById("modalColors");
+  wrap.innerHTML = "";
+
+  CATALOG_RULES.color.forEach(r => {
+    if (!r.visual) return;
+
+    const swatch = document.createElement("div");
+    swatch.className = `
+      w-8 h-8 rounded-full cursor-pointer ring-2
+      ${modalState.color === r.code ? "ring-black" : "ring-transparent"}
+    `;
+    swatch.style.background = r.visual;
+
+    swatch.onclick = () => {
+      modalState.color = r.code;
+
+      renderModalColors();
+      refreshModalProduct(); // 🔥
+    };
+
+
+    wrap.appendChild(swatch);
+  });
+}
+
+
+
+function buildCatalogFromModal() {
+  const base = parseCatalogNumber(modalState.row.catalogNumber);
+
+  return [
+    base.publisher,
+    modalState.bookType,
+    modalState.size,
+    modalState.color,
+    modalState.design
+  ].join("-");
+}
+
+function isFullCatalogNumber(catalog) {
+  return !catalog.split("-").includes("0");
+}
+
+function buildNameFromCatalog(catalog) {
+  const parts = parseCatalogNumber(catalog);
+
+  const publisher =
+    getLabelFromCode(parts.publisher, CATALOG_RULES.publisher);
+
+  const bookType =
+    getLabelFromCode(parts.bookType, CATALOG_RULES.bookType);
+
+  const size =
+    getLabelFromCode(parts.size, CATALOG_RULES.size);
+
+  const color =
+    getLabelFromCode(parts.color, CATALOG_RULES.color);
+
+  const design =
+    getLabelFromCode(parts.design, CATALOG_RULES.design);
+
+  return `${publisher} ${bookType} ${size} ${color} ${design} `;
+}
+
+function createVirtualProduct(catalog) {
+  const virtual = {
+    catalogNumber: catalog,
+    name: buildNameFromCatalog(catalog),
+    total: 0,
+    isVirtual: true
+  };
+
+  virtualProducts.push(virtual);
+  return virtual;
+}
+
+
+
+function resolveModalRow() {
+  const catalog = buildCatalogFromModal();
+
+  return inventoryRows.find(
+    r => r.catalogNumber === catalog
+  ) || null;
+}
+
+function refreshModalProduct() {
+  const catalog = buildCatalogFromModal();
+
+  // 1️⃣ Try real inventory
+  let resolvedRow = inventoryRows.find(
+    r => r.catalogNumber === catalog
+  );
+
+  // 2️⃣ If not found — check virtuals
+  if (!resolvedRow) {
+    resolvedRow = virtualProducts.find(
+      v => v.catalogNumber === catalog
+    );
+  }
+
+  // 3️⃣ Create virtual if FULL and missing
+  if (!resolvedRow && isFullCatalogNumber(catalog)) {
+    resolvedRow = createVirtualProduct(catalog);
+  }
+
+  // 4️⃣ Render modal
+  if (resolvedRow) {
+    modalState.row = resolvedRow;
+
+    document.getElementById("modalTitle").innerText =
+      resolvedRow.name;
+
+    document.getElementById("modalStock").innerText =
+      resolvedRow.total > 0
+        ? `זמין: ${resolvedRow.total}`
+        : "הבחירה אינה זמין במלאי , במידה ותזמין זה ייכנס לייצור מיידי!!";
+
+    updateModalImage();
+  } else {
+    // partial / invalid catalog
+    document.getElementById("modalStock").innerText =
+      "הבחירה אינה זמין במלאי , במידה ותזמין זה ייכנס לייצור מיידי!!";
+  }
+}
+
+
+
+function addModalToCart() {
+  const item = {
+    ...modalState.row,
+    catalogNumber:
+      `${parseCatalogNumber(modalState.row.catalogNumber).publisher}-` +
+      `${modalState.bookType}-${modalState.size}-` +
+      `${modalState.color}-${modalState.design}`
+  };
+  let existingItemIndex = cart.findIndex(line => line[0].catalogNumber === item.catalogNumber);
+  if (existingItemIndex > -1) {
+    cart[existingItemIndex][1] += 1;
+  } else {
+    cart.push([item ,1]);
+  }
+  showToast("הפריט נוסף לעגלה! ");
+  console.log(getCartQuantity((existingItemIndex.catalogNumber||item.catalogNumber)));
+  
+  updateCart();
+  closeProductModal();
+}
+
+
+function openProductModal(row) {
+  modalState = {
+    row,
+    bookType: selection.bookType,
+    size: parseCatalogNumber(row.catalogNumber).size,
+    color: parseCatalogNumber(row.catalogNumber).color,
+    design: parseCatalogNumber(row.catalogNumber).design
+  };
+  refreshModalProduct();
+
+  document.getElementById("modalTitle").innerText = row.name;
+  document.getElementById("modalStock").innerText = `זמין: ${row.total}`;
+
+  renderModalSize();
+  renderModalDesigns();
+  renderModalColors();
+  updateModalImage();
+
+  document.getElementById("productModal").classList.remove("hidden");
+  document.getElementById("productModal").classList.add("flex");
+}
+
+function closeProductModal() {
+  document.getElementById("productModal").classList.add("hidden");
+}
+
+</script>
+<!-- UI MEESAGE TOOL -->
+ <style>
+  @keyframes toast-pop {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+}
+
+.animate-center-toast {
+  animation: toast-pop 2s ease-in-out forwards;
+}
+ </style>
+<script>
+function showToast(message) {
+  const toast = document.createElement("div");
+  
+  // Center Positioning: top-1/2 left-1/2 + translate
+  // Styling: bg-black/90 (slightly transparent black) and text-white
+  toast.className = `
+    fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+    bg-black/90 text-white text-xl font-bold px-8 py-6 rounded-2xl shadow-2xl 
+    z-[100] animate-center-toast text-center
+  `;
+  
+  toast.innerHTML = `
+    <div class="flex flex-col items-center gap-2">
+     
+      <div style="direction: rtl;">${message}</div>
+    </div>
+  `;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 2000);
+}
+</script>
+<!-- IMAGE ZOOM OVERLAY -->
+<div id="imageZoom"
+  class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[1000] cursor-zoom-out">
+
+  <img id="imageZoomImg"
+    class="max-w-[95vw] max-h-[95vh] object-contain transition-transform duration-300 scale-100 pointer-events-none" />
+</div>
+
+<script>
+function openImageZoom() {
+  const zoom = document.getElementById("imageZoom");
+  const zoomImg = document.getElementById("imageZoomImg");
+  const modalImg = document.getElementById("modalImage");
+
+  zoomImg.src = modalImg.src;
+
+  zoom.classList.remove("hidden");
+  zoom.classList.add("flex");
+
+  // REAL zoom
+  requestAnimationFrame(() => {
+    zoomImg.style.transform = "scale(1.8)";
+  });
+}
+
+function closeImageZoom() {
+  const zoom = document.getElementById("imageZoom");
+  const zoomImg = document.getElementById("imageZoomImg");
+
+  zoomImg.style.transform = "scale(1)";
+
+  setTimeout(() => {
+    zoom.classList.add("hidden");
+    zoom.classList.remove("flex");
+  }, 200);
+}
+document
+  .getElementById("imageZoom")
+  .addEventListener("click", closeImageZoom);
+
+
+</script>
+<style>
+  #imageZoomImg {
+  box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+}
+
+</style>
+<div class="bg-white p-2 flex gap-4 items-center justify-center">
+   <span id="user-status"></span>
+   <button id="login-btn" onclick="signIn()" class="bg-blue-500 text-white px-4 py-1 rounded">Login</button>
+   <button id="logout-btn" onclick="signOut()" class="bg-red-500 text-white px-4 py-1 rounded" style="display:none">Logout</button>
+</div>
+</body>
+</html>
+
