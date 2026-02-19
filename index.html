@@ -1003,6 +1003,20 @@ function addToCart(index) {
   updateCart();
 }
 
+function changeQty(catalog,delta){
+  const container = document.getElementById('cartItems');
+  console.log(cart,catalog)
+  let itemdIndex = cart.findIndex(item => item[0].catalogNumber === catalog)
+  console.log(itemdIndex,cart[itemdIndex][1])
+  cart[itemdIndex][1]+= delta
+  if (cart[itemdIndex] && cart[itemdIndex][1] === 0) {
+    cart.splice(itemdIndex, 1);
+}
+  
+  updateCart()
+
+}
+
 function updateCart() {
   document.getElementById('cartCount').innerText = cart.length;
   const container = document.getElementById('cartItems');
@@ -1011,9 +1025,40 @@ function updateCart() {
   cart.forEach(item => {
     console.log(item)
     const div = document.createElement('div');
-    div.className = 'border p-2 rounded';
-    div.textContent = item[0].name 
-    div.textContent += " "+item[1];
+    div.innerHTML=`<div class="flex justify-between items-center mb-2">
+        <span class="font-semibold">${item[0].name }</span>
+        
+      </div>
+
+    <div class="flex items-center justify-between">
+
+        <div class="flex items-center gap-2">
+          <button onclick="changeQty('${item[0].catalogNumber}', -1)"
+            class="bg-gray-300 px-2 rounded">−</button>
+
+          <span>${item[1]}</span>
+
+          <button onclick="changeQty('${item[0].catalogNumber}', 1)"
+            class="bg-gray-300 px-2 rounded">+</button>
+        </div>
+
+         <span class="font-semibold">
+            ${
+              (Number(
+                String(item[0].price ?? 0)
+                  .replace("₪", "")
+                  .trim()
+              ) || 0) * (item[1] || 0)
+            } ₪
+          </span>
+
+        <button onclick="changeQty('${item[0].catalogNumber}', ${-item[1]})"
+          class="text-red-600 font-bold">🗑</button>
+      </div>`
+    // div.className = 'border p-2 rounded';
+    // div.textContent = item[0].name 
+    // div.textContent += " "+item[1];
+    // div.textContent += " " + item[0].price
     container.appendChild(div);
   });
 }
@@ -1363,7 +1408,6 @@ document
 </div>
 </body>
 </html>
-
 
 
 
