@@ -269,7 +269,7 @@
     </header>
 
     <!-- MAIN -->
-    <div class="flex flex-col lg:flex-row">
+    <div class="flex flex-col lg:flex-row justify-center items-center text-center">
 
       <!-- קטגוריות -->
       <!-- <aside class="w-64 bg-white/90 p-4 hidden md:block">
@@ -291,11 +291,11 @@
       
 
     </div>
-    <div id="bookTypeSelector" class="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6"></div>
-    <div id="publisherSelector" class="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6"></div>
-    <div class="mb-6 space-y-4">
-      <div id="colorSelector" class="flex flex-wrap gap-3"></div>
-      <div id="designSelector" class="flex flex-wrap gap-3"></div>
+    <div id="bookTypeSelector" class="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6 justify-center items-center text-center"></div>
+    <div id="publisherSelector" class="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6 justify-center items-center text-center"></div>
+    <div class="mb-6 space-y-4 justify-center items-center text-center">
+      <div id="colorSelector" class="flex flex-wrap gap-3 justify-center items-center text-center"></div>
+      <div id="designSelector" class="flex flex-wrap gap-3 justify-center items-center text-center"></div>
     </div>
 
 
@@ -965,6 +965,8 @@ function renderFilteredProducts() {
       const visualColor = null//getVisualColorFromCatalog(row);
       const div = document.createElement("div");
       div.className = "bg-white p-4 rounded-xl shadow flex flex-col h-full cursor-pointer";
+      const cardId = "card-" + row.catalogNumber;
+      div.id = cardId;
       div.innerHTML = `
      <div class="h-52 sm:h-60 md:h-64 bg-gray-100 overflow-hidden relative">
         <div class="blend-area">
@@ -976,14 +978,17 @@ function renderFilteredProducts() {
             src="${resolveProductImage(row, selection.bookType, selection.design, selection.color)}"
             alt="${row.name}"
             onerror="
-                if (!this.getAttribute('data-tried-jpeg')) {
+            if (!this.getAttribute('data-tried-jpeg')) {
                 this.setAttribute('data-tried-jpeg', 'true');
                 this.src = this.src.replace('.png', '.jpeg');
-                } else {
+            } else {
                 this.onerror = null; 
                 this.src = 'assets/images/eyicon.png';
-                }
-            "
+                // MOVE CARD TO END
+                const card = document.getElementById('${cardId}');
+                if(card) { document.getElementById('productsGrid').appendChild(card); }
+            }
+          "
           />
 
           ${visualColor ? `
