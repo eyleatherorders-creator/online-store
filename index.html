@@ -247,7 +247,12 @@
   </defs>
 </svg>
   <!-- רקע חנות -->
-  <div class="min-h-screen bg-cover bg-center" style="background-image:url('STORE_BACKGROUND.jpg')">
+  <div class="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat" 
+     style="background-image:url('assets/images/STORE_BACKROUND.jpg'); background-attachment: fixed;">
+</div>
+
+<div class="relative z-10">
+  
 
     <!-- HEADER -->
     <header class="bg-black/60 text-white 
@@ -316,6 +321,7 @@
       </div>
     </div>
 
+  </div>
   </div>
   <script>
     function buildCustomerForOrder() {
@@ -553,13 +559,15 @@ const CATALOG_RULES = {
     { match: ["חגים קטן", "חגים חדש", "*חגים*"], code: "00" },
     { match: ["שפתי", "חגים", "כינור"], code: "02" },
     { match: ["חסידי"], code: "03" },
+    { match: ["חסידי אינסרט"], code: "03I" },
     { match: ["נשיאותי"], code: "04" },
     { match: ["מודרני"], code: "05" },
     { match: ["נשיאותי פרוה", "פרוה נשיאותי"], code:"04P"},
     { match: ["מודרני פרוה", "פרוה מודרני"], code:"05P"},
     { match: ["צמה","קלוע"], code:"06"},
     { match: ["שושנים"], code:"07"},
-    { match: ["מנורה"], code:"08"}
+    { match: ["מנורה"], code:"08"},
+    { match: ["פעמונים"], code :"09"}
   ]
 };
 
@@ -736,27 +744,14 @@ function applyColorByName(itemName) {
 // }
 
 //======imegery=======
+
 function resolveProductImage(row,bookType,style,color) {
   const name = row.name || '';
 
-//   if (name.includes('חסידי')) {
-//     return 'assets/images/'+ bookType +'/hasidic.png';
-//   }
-
-//   if (name.includes('מודרני')) {
-//     return 'assets/images/'+ bookType +'/modern.png';
-//   }
-
-// if (name.includes('נשיאותי')) {
-//     return 'assets/images/'+ bookType +'/imperial.png';
-//   }
-
-// if (name.includes('בית מגילה')) {
-//     return 'assets/images/'+ bookType +'/megileh.png';
-//   }
 console.log(style+color);
   
-  return 'assets/images/'+ bookType +'/'+ (style || row.catalogNumber.split("-")[4])+ (color || row.catalogNumber.split("-")[3]) +'.png';
+
+  return 'assets/images/'+ bookType +'/'+ (style || row.catalogNumber.split("-")[4])+ (color || row.catalogNumber.split("-")[3])+'.png'
 }
 
 
@@ -980,7 +975,15 @@ function renderFilteredProducts() {
           <img
             src="${resolveProductImage(row, selection.bookType, selection.design, selection.color)}"
             alt="${row.name}"
-            onerror="this.onerror=null; this.src='assets/images/eyicon.png';"
+            onerror="
+                if (!this.getAttribute('data-tried-jpeg')) {
+                this.setAttribute('data-tried-jpeg', 'true');
+                this.src = this.src.replace('.png', '.jpeg');
+                } else {
+                this.onerror = null; 
+                this.src = 'assets/images/eyicon.png';
+                }
+            "
           />
 
           ${visualColor ? `
@@ -1114,20 +1117,39 @@ let modalState = {};
 
 function updateModalImage() {
   const imgElement = document.getElementById("modalImage");
-  
+
+  // 1. RESET STATE: Clear the "tried" flag so the next image can also try JPEG
+  imgElement.removeAttribute('data-tried-jpeg');
+
+  // 2. SET ERROR HANDLER
   imgElement.onerror = function() {
+    if (!this.getAttribute('data-tried-jpeg')) {
+      this.setAttribute('data-tried-jpeg', 'true');
+      
+      const currentSrc = this.src;
+      // Note: Use .toLowerCase() to be safe with file extensions
+      if (currentSrc.toLowerCase().includes('.png')) {
+        this.src = currentSrc.replace(/\.png$/i, '.jpeg');
+        console.log("PNG failed, attempting JPEG fallback...");
+        return; 
+      }
+    }
+
     this.onerror = null; 
     this.src = 'assets/images/eyicon.png';
-    console.warn("Product image failed to load, using placeholder.");
+    console.warn("Product image (PNG & JPEG) failed to load, using placeholder.");
   };
 
-  // 2. Resolve and set the source
-  imgElement.src = resolveProductImage(
+  // 3. RESOLVE SOURCE
+  // Make sure resolveProductImage returns a string ending in .png
+  const newSrc = resolveProductImage(
     modalState.row,
     modalState.bookType,
     modalState.design,
     modalState.color
   );
+
+  imgElement.src = newSrc;
 }
 
 function renderModalSize() {
