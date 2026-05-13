@@ -1,6 +1,7 @@
 
 import { allOrders, setAllOrders,inventoryRows,stores,setStores } from "./state.js";
 import { saveToFirebase } from "../js/firebase.js";
+import { getProductPrice } from "./rules.js";
 function addToCart(index) {
     console.log(index)
   let line = inventoryRows.find(row => row.catalogNumber === index) || virtualProducts[virtualProducts.length - 1];
@@ -61,13 +62,7 @@ function updateCart() {
         </div>
 
          <span class="font-semibold">
-            ${
-              (Number(
-                String(item[0].price ?? 0)
-                  .replace("₪", "")
-                  .trim()
-              ) || 0) * (item[1] || 0)
-            } ₪
+            ${getProductPrice(item[0]) * item[1]} ₪
           </span>
 
         <button onclick="changeQty('${item[0].catalogNumber}', ${-item[1]})"
