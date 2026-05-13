@@ -123,6 +123,53 @@ function matchesSelection(row, selection) {
   return true;
 }
 
+// image report
+export async function findProductsWithoutImages() {
+  const missing = [];
+
+  for (const row of inventoryRows) {
+    const imagePath = resolveProductImage(
+      row,
+      selection.bookType,
+      selection.design,
+      selection.color
+    );
+
+    const exists = await imageExists(imagePath);
+
+    if (!exists) {
+      missing.push({
+        name: row.name,
+        catalogNumber: row.catalogNumber,
+        image: imagePath
+      });
+    }
+  }
+
+  return missing;
+}
+
+function imageExists(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+
+    img.onload = () => resolve(true);
+
+    img.onerror = () => {
+      const jpegSrc = src.replace('.png', '.jpeg');
+
+      const jpegImg = new Image();
+
+      jpegImg.onload = () => resolve(true);
+      jpegImg.onerror = () => resolve(false);
+
+      jpegImg.src = jpegSrc;
+    };
+
+    img.src = src;
+  });
+}
+
 export{
     renderFilteredProducts,
     resolveProductImage,
