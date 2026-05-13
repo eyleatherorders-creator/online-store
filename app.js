@@ -10,7 +10,9 @@ import { setShowPrices, showPrices,selection } from "./config/state.js";
 import { renderFilteredProducts } from "./config/products.js";
 import { updateCart } from "./config/cart.js";
 import { loadRemoteRules, CATALOG_RULES, PRICE_MATRIX } from './config/rules.js';
+import { exportMissingImagesReport } from './config/reports.js';
 
+window.exportMissingImagesReport = exportMissingImagesReport;
 const toggle = document.getElementById("priceToggle");
 
 toggle.addEventListener("change", () => {
