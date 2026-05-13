@@ -19,6 +19,38 @@ const ACTIVE_BTN =
 const INACTIVE_BTN =
   "bg-gray-100 text-gray-800 hover:bg-black hover:text-white";
 
+const BUTTON_STYLES = {
+
+  bookType: {
+    active:
+      "bg-black text-white border-black",
+    inactive:
+      "bg-white text-black border-gray-300 hover:bg-gray-100"
+  },
+
+  publisher: {
+    active:
+      "bg-blue-600 text-white border-blue-600",
+    inactive:
+      "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
+  },
+
+  color: {
+    active:
+      "bg-emerald-600 text-white border-emerald-600",
+    inactive:
+      "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100"
+  },
+
+  design: {
+    active:
+      "bg-purple-600 text-white border-purple-600",
+    inactive:
+      "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100"
+  }
+
+};
+
 function renderBookTypeSelector() {
   const container = document.getElementById("bookTypeSelector");
   if (!container) return;
@@ -170,13 +202,18 @@ function createFilterButton({
   key,
   onClick
 }) {
+
   const btn = document.createElement("button");
 
-  const isActive = selection[key] === value;
+  const isActive =
+    selection[key] === value;
+
+  const styles =
+    BUTTON_STYLES[key];
 
   btn.className = `
-    px-4 py-2 rounded-xl transition
-    ${isActive ? ACTIVE_BTN : INACTIVE_BTN}
+    px-4 py-2 rounded-xl border transition
+    ${isActive ? styles.active : styles.inactive}
   `;
 
   btn.textContent = label;
