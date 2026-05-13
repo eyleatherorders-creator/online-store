@@ -20,35 +20,33 @@ const INACTIVE_BTN =
   "bg-gray-100 text-gray-800 hover:bg-black hover:text-white";
 
 const BUTTON_STYLES = {
-
   bookType: {
     active:
-      "bg-black text-white border-black",
+      "bg-black text-white border border-black shadow-md",
     inactive:
-      "bg-white text-black border-gray-300 hover:bg-gray-100"
+      "bg-white/80 text-gray-800 border border-gray-300 hover:bg-gray-100"
   },
 
   publisher: {
     active:
-      "bg-blue-600 text-white border-blue-600",
+      "bg-stone-800 text-amber-50 border border-stone-700 shadow-md",
     inactive:
-      "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
+      "bg-stone-50 text-stone-700 border border-stone-200 hover:bg-stone-100"
   },
 
   color: {
     active:
-      "bg-emerald-600 text-white border-emerald-600",
+      "bg-amber-900 text-amber-50 border border-amber-800 shadow-md",
     inactive:
-      "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100"
+      "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
   },
 
   design: {
     active:
-      "bg-purple-600 text-white border-purple-600",
+      "bg-zinc-700 text-white border border-zinc-600 shadow-md",
     inactive:
-      "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100"
+      "bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100"
   }
-
 };
 
 function renderBookTypeSelector() {
@@ -202,18 +200,18 @@ function createFilterButton({
   key,
   onClick
 }) {
-
   const btn = document.createElement("button");
 
-  const isActive =
-    selection[key] === value;
+  const isActive = selection[key] === value;
 
-  const styles =
-    BUTTON_STYLES[key];
+  const styleSet = BUTTON_STYLES[key];
 
   btn.className = `
-    px-4 py-2 rounded-xl border transition
-    ${isActive ? styles.active : styles.inactive}
+    px-5 py-2.5 rounded-2xl
+    text-sm font-medium
+    transition-all duration-200
+    backdrop-blur-sm
+    ${isActive ? styleSet.active : styleSet.inactive}
   `;
 
   btn.textContent = label;
