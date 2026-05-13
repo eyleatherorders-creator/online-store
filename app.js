@@ -1,12 +1,12 @@
 import { loadUnifiedInventory ,initStores} from "./js/firebase.js";
 
-import { renderBookTypeSelector } from "./config/filters.js";
+import { renderBookTypeSelector,renderColorSelector,renderDesignSelector,renderPublisherSelector } from "./config/filters.js";
 
 import { setInventoryRows } from "./config/state.js";
 
 import { buildCatalogNumber } from "./config/catalog.js";
 
-import { setShowPrices, showPrices } from "./config/state.js";
+import { setShowPrices, showPrices,selection } from "./config/state.js";
 import { renderFilteredProducts } from "./config/products.js";
 import { updateCart } from "./config/cart.js";
 import { loadRemoteRules, CATALOG_RULES, PRICE_MATRIX } from './config/rules.js';
@@ -25,14 +25,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   if(success){
 
     const rows = await loadUnifiedInventory();
+    selection.bookType = "1";
     const processed = rows.map(row => ({
       ...row,
       catalogNumber: buildCatalogNumber(row)
     }));
 
     setInventoryRows(processed);
-
     renderBookTypeSelector();
+    renderPublisherSelector();
+    renderColorSelector();
+    renderDesignSelector();
+    renderFilteredProducts();
     initStores();
 
   }
