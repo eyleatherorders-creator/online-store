@@ -101,43 +101,43 @@ onAuthStateChanged(auth, (user) => {
 // ===== LOAD INVENTORY =====
 
 export async function loadUnifiedInventory() {
-
   try {
-
-    const ref = doc(db, "inventory", "unified");
-
+    const inventoryRef = doc(db, "inventory", "unified");
     const orderDocRef = doc(db, "orders", "all");
 
-    // LOAD ORDERS
-    const snap1 = await getDoc(orderDocRef);
+    console.log("⏳ Initiating parallel Firebase fetch for Inventory and Orders...");
 
-    if (snap1.exists()) {
+    // THE FIX: Trigger BOTH network requests simultaneously in parallel
+    const [ordersSnap, inventorySnap] = await Promise.all([
+      getDoc(orderDocRef),
+      getDoc(inventoryRef)
+    ]);
 
-      const data = snap1.data().list || [];
-
-      setAllOrders(data);
-
-      console.log(
-        "Loaded existing orders:",
-        data.length
-      );
+    // 1. Process Orders data safely in memory
+    if (ordersSnap.exists()) {
+      const ordersData = ordersSnap.data().list || [];
+      setAllOrders(ordersData);
+      console.log("📋 Parallel Load: Existing orders synced successfully:", ordersData.length);
+    } else {
+      console.warn("⚠️ Orders document ('orders/all') does not exist in Firestore.");
+      setAllOrders([]); // Fallback to safe state
     }
 
-    // LOAD INVENTORY
-    const snap = await getDoc(ref);
-
-    return snap.exists()
-      ? snap.data().rows || []
-      : [];
+    // 2. Process and return Inventory rows cleanly
+    if (inventorySnap.exists()) {
+      const inventoryRows = inventorySnap.data().rows || [];
+      console.log("📦 Parallel Load: Inventory rows retrieved successfully:", inventoryRows.length);
+      return inventoryRows; // Hand this directly back to app.js Stage 5
+    } else {
+      console.warn("⚠️ Inventory document ('inventory/unified') does not exist in Firestore.");
+      return [];
+    }
 
   } catch (error) {
-
-    console.error("Firestore Error:", error);
-
-    return [];
+    console.error("💥 Critical Firestore Fetch Error within parallel handler:", error);
+    return []; // Return empty array so the main app.js execution loop never freezes
   }
 }
-
 // ===== SAVE ORDERS =====
 
 export async function saveToFirebase(updatedArray) {
