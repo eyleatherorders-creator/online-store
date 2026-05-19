@@ -102,13 +102,15 @@ function renderFilteredProducts() {
 }
 
 
-function resolveProductImage(row,bookType,style,color) {
+function resolveProductImage(row, bookType, style, color) {
   const name = row.name || '';
 
-console.log(style+color);
   
+  const rawStyle = style || String(row.catalogNumber || '').split("-")[4] || '';
+  const cleanStyle = rawStyle.replace('D', '')
+  const finalColor = color || String(row.catalogNumber || '').split("-")[3] || '';
 
-  return 'assets/images/'+ bookType +'/'+ (style || row.catalogNumber.split("-")[4])+ (color || row.catalogNumber.split("-")[3])+'.png'
+  return 'assets/images/' + bookType + '/' + cleanStyle + finalColor + '.png';
 }
 
 function matchesSelection(row, selection) {
