@@ -128,73 +128,153 @@ function getRulePrice(rulesArray, code) {
 //   return total;
 // }
 
-function getProductPrice(row) {
+// function getProductPrice(row) {
 
+//   if (!row?.catalogNumber) return 0;
+
+//   const parts = parseCatalogNumber(
+//     row.catalogNumber
+//   );
+
+//   // =========================
+//   // BASE PRICE
+//   // =========================
+
+//   const matrixKey =
+//     `${parts.publisher}-${parts.bookType}`;
+
+//   const basePrice =
+//     Number(PRICE_MATRIX?.[matrixKey] || 0);
+
+//   // =========================
+//   // AMOUNT
+//   // =========================
+
+//   const bookTypeRule =
+//     CATALOG_RULES.bookType.find(
+//       r => r.code === parts.bookType
+//     );
+
+//   const amount =
+//     Number(bookTypeRule?.amount || 1);
+
+//   // =========================
+//   // MODIFIERS
+//   // =========================
+
+//   const sizePrice =
+//     getRulePrice(
+//       CATALOG_RULES.size,
+//       parts.size
+//     );
+
+//   const colorPrice =
+//     getRulePrice(
+//       CATALOG_RULES.color,
+//       parts.color
+//     );
+
+//   const designPrice =
+//     getRulePrice(
+//       CATALOG_RULES.design,
+//       parts.design
+//     );
+
+//   // =========================
+//   // TOTAL
+//   // =========================
+
+//   const total =
+//     basePrice +
+//     (
+//       sizePrice +
+//       colorPrice +
+//       designPrice
+//     ) * amount;
+
+//   return Number(total || 0);
+// }
+function getProductPrice(row) {
   if (!row?.catalogNumber) return 0;
 
-  const parts = parseCatalogNumber(
-    row.catalogNumber
-  );
+  // 1. Parse the catalog row into its exact structural parts
+  const parts = parseCatalogNumber(row.catalogNumber);
+  
+  // Create an array of active codes present in this specific product
+  const productParts = [
+    parts.publisher,
+    parts.bookType,
+    parts.size,
+    parts.color,
+    parts.design
+  ].filter(Boolean).map(p => String(p).toUpperCase());
 
-  // =========================
-  // BASE PRICE
-  // =========================
+  // ==========================================
+  // DYNAMIC MATCHING ENGINE (Highest Overlap)
+  // ==========================================
+  let bestMatrixKey = null;
+  let maxMatchesCount = 0;
+  let matchedMatrixParts = [];
 
-  const matrixKey =
-    `${parts.publisher}-${parts.bookType}`;
+  // Loop through every single rule saved in your matrix dictionary
+  Object.keys(PRICE_MATRIX || {}).forEach(matrixKey => {
+    // Split the matrix key into its individual component codes
+    const matrixParts = matrixKey.split('-').map(p => p.trim().toUpperCase());
+    
+    // Check how many parts of this matrix key exist inside our product number
+    let currentMatchesCount = 0;
+    matrixParts.forEach(mPart => {
+      if (productParts.includes(mPart)) {
+        currentMatchesCount++;
+      }
+    });
 
-  const basePrice =
-    Number(PRICE_MATRIX?.[matrixKey] || 0);
+    // Strategy rule: A valid match means ALL parts of the matrix key must be satisfied by the product.
+    // We want the key that matches the MOST parts of our product.
+    if (currentMatchesCount === matrixParts.length && currentMatchesCount > maxMatchesCount) {
+      maxMatchesCount = currentMatchesCount;
+      bestMatrixKey = matrixKey;
+      matchedMatrixParts = matrixParts; // Keep track of what the matrix covered
+    }
+  });
 
-  // =========================
-  // AMOUNT
-  // =========================
+  // Determine our dynamic base price based on our winner
+  let basePrice = 0;
+  if (bestMatrixKey) {
+    basePrice = Number(PRICE_MATRIX[bestMatrixKey] || 0);
+  } else {
+    // Ultimate fallback if absolutely nothing in the matrix matches at all
+    basePrice = 0; 
+  }
 
-  const bookTypeRule =
-    CATALOG_RULES.bookType.find(
-      r => r.code === parts.bookType
-    );
+  // ==========================================
+  // MULTIPLIER (Book Type Amount)
+  // ==========================================
+  const bookTypeRule = CATALOG_RULES.bookType.find(r => r.code === parts.bookType);
+  const amount = Number(bookTypeRule?.amount || 1);
 
-  const amount =
-    Number(bookTypeRule?.amount || 1);
+  // ==========================================
+  // DYNAMIC LEFTOVER MODIFIERS
+  // ==========================================
+  // We check if a part was ALREADY matched inside the matrix base price.
+  // If it was, we treat its addon price as 0 so we don't double-charge the client!
+  
+  const sizePrice = matchedMatrixParts.includes(String(parts.size).toUpperCase()) 
+    ? 0 : getRulePrice(CATALOG_RULES.size, parts.size);
 
-  // =========================
-  // MODIFIERS
-  // =========================
+  const colorPrice = matchedMatrixParts.includes(String(parts.color).toUpperCase()) 
+    ? 0 : getRulePrice(CATALOG_RULES.color, parts.color);
 
-  const sizePrice =
-    getRulePrice(
-      CATALOG_RULES.size,
-      parts.size
-    );
+  const designPrice = matchedMatrixParts.includes(String(parts.design).toUpperCase()) 
+    ? 0 : getRulePrice(CATALOG_RULES.design, parts.design);
 
-  const colorPrice =
-    getRulePrice(
-      CATALOG_RULES.color,
-      parts.color
-    );
-
-  const designPrice =
-    getRulePrice(
-      CATALOG_RULES.design,
-      parts.design
-    );
-
-  // =========================
-  // TOTAL
-  // =========================
-
-  const total =
-    basePrice +
-    (
-      sizePrice +
-      colorPrice +
-      designPrice
-    ) * amount;
+  // ==========================================
+  // TOTAL CALCULATION
+  // ==========================================
+  const total = basePrice + (sizePrice + colorPrice + designPrice) * amount;
 
   return Number(total || 0);
 }
-
 export {
   getProductPrice
 };
