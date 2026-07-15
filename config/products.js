@@ -8,8 +8,9 @@ import { IMAGE_MAPPING_GROUPS } from "./imageUrlMap.js";
 
 import {
   CATALOG_RULES,
+  FIREBASE_IMAGE_MAPPING_GROUPS,
   getProductPrice
-} from "./rules.js"
+} from "./rules.js";
 
 import { getLabelFromCode, parseCatalogNumber } from "./catalog.js";
 import { openProductModal } from "./modal.js";
@@ -137,39 +138,89 @@ function renderFilteredProducts() {
 //   return 'assets/images/' + bookType + '/' + cleanStyle + finalColor + '.png';
 // }
 
-function resolveProductImage(row, bookType, style, color) {
+// function resolveProductImage(row, bookType, style, color) {
   
-  // 1. Calculate the style and color strings from arguments or catalog number
+//   // 1. Calculate the style and color strings from arguments or catalog number
+//   const rawStyle = style || String(row.catalogNumber || '').split("-")[5] || '';
+//   const cleanStyle = rawStyle.replace('D', '');
+//   const finalColor = color || String(row.catalogNumber || '').split("-")[4] || '';
+  
+//   const searchTarget = cleanStyle + finalColor; // e.g., "07W"
+
+//   // 2. Check if we have an image group mapped for this specific bookType (e.g., group 4)
+//   const targetGroup = IMAGE_MAPPING_GROUPS[bookType];
+  
+//   if (targetGroup) {
+//     // Look through the URLs in this bookType group
+//     const urls = Object.values(targetGroup);
+    
+//     for (const url of urls) {
+//       // Strip the URL to get the file name (e.g., "https://.../07W.png" -> "07W")
+//       const lastSlashIndex = url.lastIndexOf('/');
+//       const lastDotIndex = url.lastIndexOf('.');
+//       const strippedName = url.substring(lastSlashIndex + 1, lastDotIndex);
+
+//       // If it matches our target code exactly, return the cloud URL right away!
+//       if (strippedName === searchTarget) {
+//         return url;
+//       }
+//     }
+//   }
+
+//   // 3. Fallback: If no cloud URL group or match exists, use your local asset path
+//   return 'assets/images/' + bookType + '/' + cleanStyle + finalColor + '.png';
+// }
+function resolveProductImage(row, bookType, style, color) {
   const rawStyle = style || String(row.catalogNumber || '').split("-")[5] || '';
   const cleanStyle = rawStyle.replace('D', '');
   const finalColor = color || String(row.catalogNumber || '').split("-")[4] || '';
-  
-  const searchTarget = cleanStyle + finalColor; // e.g., "07W"
 
-  // 2. Check if we have an image group mapped for this specific bookType (e.g., group 4)
-  const targetGroup = IMAGE_MAPPING_GROUPS[bookType];
-  
-  if (targetGroup) {
-    // Look through the URLs in this bookType group
-    const urls = Object.values(targetGroup);
-    
-    for (const url of urls) {
-      // Strip the URL to get the file name (e.g., "https://.../07W.png" -> "07W")
-      const lastSlashIndex = url.lastIndexOf('/');
-      const lastDotIndex = url.lastIndexOf('.');
-      const strippedName = url.substring(lastSlashIndex + 1, lastDotIndex);
+  const searchTarget = cleanStyle + finalColor;
 
-      // If it matches our target code exactly, return the cloud URL right away!
-      if (strippedName === searchTarget) {
-        return url;
-      }
-    }
-  }
+  const localMapUrl = findImageUrlInGroup(
+    IMAGE_MAPPING_GROUPS[bookType],
+    searchTarget
+  );
 
-  // 3. Fallback: If no cloud URL group or match exists, use your local asset path
+  if (localMapUrl) return localMapUrl;
+
+  const firebaseMapUrl = findImageUrlInGroup(
+    FIREBASE_IMAGE_MAPPING_GROUPS[bookType],
+    searchTarget
+  );
+
+  if (firebaseMapUrl) return firebaseMapUrl;
+
   return 'assets/images/' + bookType + '/' + cleanStyle + finalColor + '.png';
 }
 
+function findImageUrlInGroup(group, searchTarget) {
+  if (!group) return null;
+
+  const urls = Array.isArray(group)
+    ? group
+    : Object.values(group);
+
+  for (const url of urls) {
+    const strippedName = getImageCodeFromUrl(url);
+
+    if (strippedName === searchTarget) {
+      return url;
+    }
+  }
+
+  return null;
+}
+
+function getImageCodeFromUrl(url) {
+  const cleanUrl = String(url || '').split('?')[0];
+  const fileName = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
+  const dotIndex = fileName.lastIndexOf('.');
+
+  return dotIndex >= 0
+    ? fileName.substring(0, dotIndex)
+    : fileName;
+}
 function matchesSelection(row, selection) {
   const parts = parseCatalogNumber(row.catalogNumber);
 
