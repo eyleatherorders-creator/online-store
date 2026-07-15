@@ -39,6 +39,7 @@ const COLOR_RULES = [
 let CATALOG_RULES = { publisher: [], bookType: [], size: [], color: [], design: [] };
 let PRICE_MATRIX = {};
 let CATEGORY_PRICES = {};
+let FIREBASE_IMAGE_MAPPING_GROUPS = {};
 
 /**
  * Call this function once when your app starts
@@ -56,6 +57,11 @@ async function loadRemoteRules() {
         // 3. Fetch Category Base Prices
         const priceSnap = await getDoc(doc(db, "settings", "categoryPrices"));
         if (priceSnap.exists()) CATEGORY_PRICES = priceSnap.data();
+        
+        const imageMapSnap = await getDoc(doc(db, "settings", "imageUrlMap"));
+        if (imageMapSnap.exists()) {
+          FIREBASE_IMAGE_MAPPING_GROUPS = imageMapSnap.data().groups || {};
+        }
 
         console.log("Remote rules loaded successfully.");
         return true;
@@ -65,15 +71,17 @@ async function loadRemoteRules() {
     }
 }
 
+
 export {
-    loadRemoteRules,
-    BOOK_TYPE_RULES,
-    SKIN_RULES,
-    PLATE_RULES,
-    COLOR_RULES,
-    CATALOG_RULES,
-    PRICE_MATRIX,
-    CATEGORY_PRICES
+  loadRemoteRules,
+  BOOK_TYPE_RULES,
+  SKIN_RULES,
+  PLATE_RULES,
+  COLOR_RULES,
+  CATALOG_RULES,
+  PRICE_MATRIX,
+  CATEGORY_PRICES,
+  FIREBASE_IMAGE_MAPPING_GROUPS
 };
 
 
@@ -278,3 +286,4 @@ function getProductPrice(row) {
 export {
   getProductPrice
 };
+
