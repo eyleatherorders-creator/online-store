@@ -71,6 +71,7 @@ function resetToMainMenu() {
   renderPublisherSelector();
   renderColorSelector();
   renderDesignSelector();
+  await loadRemoteRules();
   renderFilteredProducts();
 
   document.querySelector(".menu-panel")?.scrollIntoView({
